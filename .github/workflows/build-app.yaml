@@ -35,4 +35,4 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: ghcr.io/${{ github.actor }}/app-1:${{ steps.vars.outputs.VERSION }}
+          tags: ghcr.io/dolvladzio/app-1:${{ steps.vars.outputs.VERSION }}
