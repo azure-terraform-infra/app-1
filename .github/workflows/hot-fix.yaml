@@ -21,6 +21,9 @@ on:
 
 env:
   ORG: ${{ github.repository_owner }}
+  ENVIRONMENT: ${{ inputs.environment }}
+  VERSION: ${{ inputs.version }}
+  APP_NAME: ${{ github.event.repository.name }}
 
 permissions:
   contents: read
@@ -36,29 +39,29 @@ jobs:
       app-name: ${{ github.event.repository.name }}
       environment: ${{ inputs.environment }}
 
-  trigger-deploy-chart-workflow:
-    needs: trigger-build-images-workflow
-    name: Deploy Release
+  trigger-hot-fix-workflow:
+    name: Trigger Hot Fix Workflow
     runs-on: ubuntu-latest
     steps:
       - name: Trigger the App Charts runner
         uses: peter-evans/repository-dispatch@v3
         with:
           token: ${{ secrets.PAT }}
-          repository: ${{ env.ORG }}/app-charts
-          event-type: charts-deployment-trigger
+          repository: ${{ env.ORG }}/release-rollback-repo
+          event-type: hot-fix-deployment-trigger
           client-payload: |
             {
-              "environment": "${{ inputs.environment }}",
-              "version": "${{ inputs.version }}"
+              "environment": "${{ env.ENVIRONMENT }}",
+              "version": "${{ env.VERSION }}",
+              "app-name": "${{ env.APP_NAME }}"
             }
 
       - name: Wait for workflow to complete
         env:
           GH_TOKEN: ${{ secrets.PAT }}
         run: |
-          echo "Waiting for Charts CI/CD Pipeline workflow to start..."
-          sleep 15
+          echo "Waiting for Hot Fix workflow to start..."
+          sleep 60
           
           TIMEOUT=1800
           ELAPSED=0
@@ -68,8 +71,8 @@ jobs:
           while [ $ELAPSED -lt $TIMEOUT ]; do
             # Get recent workflow runs
             RUNS=$(gh run list \
-              --repo ${{ env.ORG }}/app-charts \
-              --workflow "Charts CI/CD Pipeline" \
+              --repo ${{ env.ORG }}/release-rollback-repo \
+              --workflow "Hot Fix" \
               --limit 5 \
               --json status,conclusion,createdAt,databaseId)
             
