@@ -27,6 +27,7 @@ permissions:
 jobs:
   trigger-build-images-workflow:
     uses: azure-terraform-infra/release-rollback-repo/.github/workflows/build-images.yaml@main
+    secrets: inherit
     with:
       version: ${{ inputs.version }}
       app-name: ${{ github.event.repository.name }}
@@ -35,6 +36,7 @@ jobs:
   trigger-deploy-charts-workflow:
     needs: trigger-build-images-workflow
     uses: azure-terraform-infra/app-charts/.github/workflows/charts.yaml@main
+    secrets: inherit
     with:
       version: ${{ inputs.version }}
       environment: ${{ inputs.environment }}
