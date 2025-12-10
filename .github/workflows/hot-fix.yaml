@@ -48,7 +48,7 @@ jobs:
         uses: peter-evans/repository-dispatch@v3
         with:
           token: ${{ secrets.PAT }}
-          repository: ${{ env.ORG }}/release-rollback-repo
+          repository: ${{ env.ORG }}/app-charts
           event-type: hot-fix-deployment-trigger
           client-payload: |
             {
@@ -72,7 +72,7 @@ jobs:
           while [ $ELAPSED -lt $TIMEOUT ]; do
             # Get recent workflow runs
             RUNS=$(gh run list \
-              --repo ${{ env.ORG }}/release-rollback-repo \
+              --repo ${{ env.ORG }}/app-charts \
               --workflow "Hot Fix" \
               --limit 5 \
               --json status,conclusion,createdAt,databaseId)
