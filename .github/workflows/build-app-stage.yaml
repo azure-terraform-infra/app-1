@@ -51,7 +51,7 @@ jobs:
           client-payload: |
             {
               "environment": "${{ env.ENVIRONMENT }}",
-              "version": ${{ needs.timestamp.outputs.version }}
+              "version": "${{ needs.timestamp.outputs.version }}"
             }
 
       - name: Wait for workflow to complete
