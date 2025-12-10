@@ -38,7 +38,7 @@ jobs:
     secrets: inherit
 
   trigger-deploy-chart-workflow:
-    needs: trigger-reusable-workflow
+    needs: [trigger-reusable-workflow, timestamp]
     name: Deploy Release
     runs-on: ubuntu-latest
     steps:
@@ -51,7 +51,7 @@ jobs:
           client-payload: |
             {
               "environment": "${{ env.ENVIRONMENT }}",
-              "version": "${{ needs.timestamp.outputs.version }}"
+              "version": ${{ needs.timestamp.outputs.version }}
             }
 
       - name: Wait for workflow to complete
