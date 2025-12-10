@@ -35,6 +35,7 @@ jobs:
       version: ${{ needs.timestamp.outputs.version }}
       app-name: ${{ github.event.repository.name }}
       environment: "dev"
+    secrets: inherit
 
   trigger-deploy-chart-workflow:
     needs: trigger-reusable-workflow
