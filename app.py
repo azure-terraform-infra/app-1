@@ -9,15 +9,14 @@ APP_VERSION = os.environ.get("APP_VERSION", "unknown")
 @app.route("/app-1")
 def hello():
     return f"Hello from Flask-1 inside Docker! Version: {APP_VERSION}"
+ 
+@app.route("/health")
+def health():
+    return {'status': 'healthy'}, 200
 
-# @app.route("/app-1-health")
-# def health():
-#     return {'status': 'healthy'}, 200
-
-# @app.route("/app-1-ready")
-# def ready():
-#     # Check database connection, etc.
-#     return {'status': 'ready'}, 200
+@app.route("/")
+def root():
+    return {'status': 'alive'}, 200
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
