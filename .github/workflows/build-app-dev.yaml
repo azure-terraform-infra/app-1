@@ -1,14 +1,13 @@
-name: Build App-1 Stage
+name: Build App-1 Dev
 on:
   push:
     branches:
       - 'dev'
-      - 'stage'
   workflow_dispatch:
 
 env:
   ORG: ${{ github.repository_owner }}
-  ENVIRONMENT: dev
+  ENVIRONMENT: ${{ github.ref_name }}
 
 permissions:
   contents: read
@@ -36,3 +35,21 @@ jobs:
       app-name: ${{ github.event.repository.name }}
       environment: "dev"
     secrets: inherit
+
+  trigger-hot-fix-workflow:
+    needs: timestamp
+    name: Trigger Hot Fix Workflow
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger the App Charts runner
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.PAT }}
+          repository: ${{ env.ORG }}/app-charts
+          event-type: stage-deployment-trigger
+          client-payload: |
+            {
+              "environment": "${{ env.ENVIRONMENT }}",
+              "version": "${{ needs.timestamp.outputs.version }}",
+              "app-name": "${{ github.event.repository.name }}"
+            }
