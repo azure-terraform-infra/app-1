@@ -7,10 +7,6 @@ app = Flask(__name__)
 APP_VERSION = os.environ.get("APP_VERSION", "unknown")
 
 @app.route("/")
-def root():
-    return {'status': 'healthy'}, 200
-
-@app.route("/app-1/app-1/")
 def hello():
     return f"Hello from Flask-1 inside Docker! Version: {APP_VERSION}"
  
