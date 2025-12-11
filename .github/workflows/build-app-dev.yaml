@@ -37,7 +37,7 @@ jobs:
     secrets: inherit
 
   trigger-hot-fix-workflow:
-    needs: timestamp
+    needs: trigger-reusable-workflow
     name: Trigger Hot Fix Workflow
     runs-on: ubuntu-latest
     steps:
