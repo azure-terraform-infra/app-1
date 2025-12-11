@@ -6,15 +6,15 @@ app = Flask(__name__)
 # Read version from environment
 APP_VERSION = os.environ.get("APP_VERSION", "unknown")
 
-@app.route("/")
+@app.route("/app-1")
 def hello():
     return f"Hello from Flask-1 inside Docker! Version: {APP_VERSION}"
 
-@app.route("/health")
+@app.route("/app-1/health")
 def health():
     return {'status': 'healthy'}, 200
 
-@app.route("/ready")
+@app.route("/app-1/ready")
 def ready():
     # Check database connection, etc.
     return {'status': 'ready'}, 200
