@@ -1,4 +1,4 @@
-name: Hot Fix Prod App-1
+name: Hot Fix App-1 Prod
 on:
   push:
     branches:
