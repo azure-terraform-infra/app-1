@@ -22,7 +22,7 @@ jobs:
       - name: Generate timestamp
         id: timestamp
         run: |
-          echo "version=$(date +%Y-%m-%d-%H-%M-%S)" >> $GITHUB_OUTPUT
+          echo "version=dev-$(date +%Y-%m-%d-%H-%M-%S)" >> $GITHUB_OUTPUT
 
       - name: Show version
         run: echo "Version is ${{ steps.timestamp.outputs.version }}"
