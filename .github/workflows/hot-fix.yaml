@@ -1,0 +1,113 @@
+name: Hot Fix App-1 Prod
+on:
+  push:
+    branches:
+      - 'hot-fix*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag to build'
+        required: true
+        type: string
+        default: 'hot-fix-2025-01-01'
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        type: choice
+        options:
+          - dev
+          - prod
+        default: 'prod'
+
+env:
+  ORG: ${{ github.repository_owner }}
+  ENVIRONMENT: ${{ inputs.environment }}
+  VERSION: ${{ inputs.version }}
+  APP_NAME: ${{ github.event.repository.name }}
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+
+jobs:
+  trigger-build-images-workflow:
+    uses: azure-terraform-infra/release-rollback-repo/.github/workflows/build-images.yaml@main
+    secrets: inherit
+    with:
+      version: ${{ inputs.version }}
+      app-name: ${{ github.event.repository.name }}
+      environment: ${{ inputs.environment }}
+
+  trigger-hot-fix-workflow:
+    needs: trigger-build-images-workflow
+    name: Trigger Hot Fix Workflow
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger the App Charts runner
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.PAT }}
+          repository: ${{ env.ORG }}/app-charts
+          event-type: hot-fix-deployment-trigger
+          client-payload: |
+            {
+              "environment": "${{ env.ENVIRONMENT }}",
+              "version": "${{ env.VERSION }}",
+              "app-name": "${{ env.APP_NAME }}"
+            }
+
+      - name: Wait for workflow to complete
+        env:
+          GH_TOKEN: ${{ secrets.PAT }}
+        run: |
+          echo "Waiting for Hot Fix workflow to start..."
+          sleep 60
+          
+          TIMEOUT=1800
+          ELAPSED=0
+          INTERVAL=15
+          FOUND=false
+          
+          while [ $ELAPSED -lt $TIMEOUT ]; do
+            # Get recent workflow runs
+            RUNS=$(gh run list \
+              --repo ${{ env.ORG }}/app-charts \
+              --workflow "Hot Fix" \
+              --limit 5 \
+              --json status,conclusion,createdAt,databaseId)
+            
+            # Find the most recent run created after this step started
+            LATEST_RUN=$(echo "$RUNS" | jq -r '.[0]')
+            
+            if [ "$LATEST_RUN" != "null" ] && [ "$LATEST_RUN" != "" ]; then
+              FOUND=true
+              STATUS=$(echo "$LATEST_RUN" | jq -r '.status')
+              CONCLUSION=$(echo "$LATEST_RUN" | jq -r '.conclusion')
+              RUN_ID=$(echo "$LATEST_RUN" | jq -r '.databaseId')
+              
+              echo "[${ELAPSED}s] Workflow run #$RUN_ID - Status: $STATUS, Conclusion: $CONCLUSION"
+              
+              if [ "$STATUS" == "completed" ]; then
+                if [ "$CONCLUSION" == "success" ]; then
+                  echo "✅ Workflow completed successfully"
+                  exit 0
+                else
+                  echo "❌ Workflow failed with conclusion: $CONCLUSION"
+                  exit 1
+                fi
+              fi
+            else
+              echo "[${ELAPSED}s] Waiting for workflow to start..."
+            fi
+            
+            sleep $INTERVAL
+            ELAPSED=$((ELAPSED + INTERVAL))
+          done
+          
+          if [ "$FOUND" == "false" ]; then
+            echo "❌ No workflow run found"
+          else
+            echo "❌ Timeout waiting for workflow to complete"
+          fi
+          exit 1

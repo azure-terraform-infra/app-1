@@ -1,0 +1,56 @@
+name: Build App-1 Dev/Stage
+on:
+  push:
+    branches:
+      - 'dev'
+      - 'stage'
+  workflow_dispatch:
+
+env:
+  ORG: ${{ github.repository_owner }}
+  ENVIRONMENT: ${{ github.ref_name }}
+
+permissions:
+  contents: read
+  packages: write 
+
+jobs:
+  timestamp:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.timestamp.outputs.version }}
+    steps:
+      - name: Generate timestamp
+        id: timestamp
+        run: |
+          echo "version=${{ env.ENVIRONMENT }}-$(date +%Y-%m-%d-%H-%M-%S)" >> $GITHUB_OUTPUT
+
+      - name: Show version
+        run: echo "Version is ${{ steps.timestamp.outputs.version }}"
+
+  trigger-reusable-workflow:
+    needs: timestamp
+    uses: azure-terraform-infra/release-rollback-repo/.github/workflows/build-images.yaml@main
+    with:
+      version: ${{ needs.timestamp.outputs.version }}
+      app-name: ${{ github.event.repository.name }}
+      environment: ${{ github.ref_name }}
+    secrets: inherit
+
+  trigger-chart-workflow:
+    needs: [  timestamp, trigger-reusable-workflow ]
+    name: Trigger Chart Workflow
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger the App Charts runner
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.PAT }}
+          repository: ${{ env.ORG }}/app-charts
+          event-type: dev-stage-deployment-trigger
+          client-payload: |
+            {
+              "environment": "${{ env.ENVIRONMENT }}",
+              "version": "${{ needs.timestamp.outputs.version }}",
+              "app-name": "${{ github.event.repository.name }}"
+            }
